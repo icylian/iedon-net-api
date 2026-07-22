@@ -1,23 +1,52 @@
----
-
 services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:-iedon-peerapi}
+      MARIADB_USER: ${DB_USER:-peerapi}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+    volumes:
+      - mysql_peerapi_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   redis:
-    image: redis:latest
-    container_name: redis_container
-    ports:
-      - "6379:6379"
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_peerapi_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   peerapi:
     build:
-      context: ./iedon-net-api
+      context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
-      - ./config/auth42-cred:/data/auth42-cred
-      - ./config/config.js:/usr/src/app/config.js
-      - /var/log/peerapi:/usr/src/app/logs
-      # - /var/run/peerapi:/var/run/peerapi
-    #ports:
-    #  - "3000:3000/tcp"
-    #  - "4222:4222/tcp"
+      - ./config/config.js:/usr/src/app/config.js:ro
+      - peerapi_logs:/usr/src/app/logs
+    ports:
+      - "127.0.0.1:${API_PORT:-3000}:3000/tcp"
+      - "${PROBE_PORT:-2189}:2189/udp"
+      # 仅在确实启用 SSH 登录认证时取消下一行注释。
+      # - "${SSH_AUTH_PORT:-4222}:4222/tcp"
+
+volumes:
+  mysql_peerapi_data:
+  redis_peerapi_data:
+  peerapi_logs:
