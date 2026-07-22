@@ -1,6 +1,12 @@
 import { Sequelize } from "sequelize";
 
-export async function useDbContext(app, dbSettings) {
+const LEGACY_NETWORK_DEFAULTS = {
+  NET_NAME: "iEdon.dn42",
+  NET_DESC: "iEdon.dn42 is an experimental global network within DN42",
+  NET_ASN: "4242422189",
+};
+
+export async function useDbContext(app, dbSettings, networkSettings = {}) {
   const dbLogger = app.logger.getLogger("database");
 
   const sequelizeOptions = {
@@ -43,20 +49,37 @@ export async function useDbContext(app, dbSettings) {
   app.sequelize = sequelize;
 
   try {
+    const defaultSettings = [
+      { key: "NET_NAME", value: networkSettings.name || "Mofu Networks" },
+      {
+        key: "NET_DESC",
+        value:
+          networkSettings.description ||
+          "Mofu Networks is an experimental network within DN42",
+      },
+      { key: "NET_ASN", value: String(networkSettings.asn || "4242422670") },
+      { key: "MAINTENANCE_TEXT", value: "" },
+      { key: "FOOTER_TEXT", value: "Powered by PeerAPI and Acorle" },
+    ];
+
     await sequelize.sync({ alter: dbSettings.alter || false });
-    await models.settings.bulkCreate(
-      [
-        { key: "NET_NAME", value: "Mofu Networks" },
-        {
-          key: "NET_DESC",
-          value: "Mofu Networks is an experimental network within DN42",
-        },
-        { key: "NET_ASN", value: "4242422670" },
-        { key: "MAINTENANCE_TEXT", value: "" },
-        { key: "FOOTER_TEXT", value: "Powered by PeerAPI and Acorle" },
-      ],
-      { ignoreDuplicates: true }
-    );
+    await models.settings.bulkCreate(defaultSettings, { ignoreDuplicates: true });
+
+    if (networkSettings.migrateLegacyDefaults !== false) {
+      for (const setting of defaultSettings) {
+        const legacyValue = LEGACY_NETWORK_DEFAULTS[setting.key];
+        if (legacyValue === undefined) continue;
+
+        const [updatedRows] = await models.settings.update(
+          { value: setting.value },
+          { where: { key: setting.key, value: legacyValue } }
+        );
+
+        if (updatedRows > 0) {
+          dbLogger.info(`Migrated legacy setting ${setting.key}.`);
+        }
+      }
+    }
   } catch (error) {
     if (dbSettings.logging && error.name !== "SequelizeUniqueConstraintError") {
       dbLogger.error(error);

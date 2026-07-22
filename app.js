@@ -6,7 +6,7 @@
  */
 
 import pkg from './package.json' with { type: "json" };
-import localSettings from './config.js';
+import fileSettings from './config.js';
 
 import { useLogger } from './providers/logger/logger.js';
 import { useMail } from './providers/mail/mail.js';
@@ -18,11 +18,14 @@ import { useRedisContext } from './db/redisContext.js';
 import { useSshAuthServer } from './providers/ssh/sshAuthServer.js';
 import { useOpenAuth } from './providers/openAuth/openAuth.js';
 import { useProbeServer } from './providers/probeServer/probeServer.js';
+import { applyRuntimeConfig } from './common/runtimeConfig.js';
 
 import { registerRoutes } from './routes.js';
 import { requestMiddleware } from './request.js';
 
 import { Hono } from 'hono';
+
+const localSettings = applyRuntimeConfig(fileSettings, process.env);
 
 // Initialize app object
 const app = {
@@ -48,7 +51,7 @@ registerRoutes(app);
 
     // Initialize dependencies
     await Promise.all([
-      useDbContext(app, app.settings.dbSettings),
+      useDbContext(app, app.settings.dbSettings, app.settings.networkSettings),
       useRedisContext(app, app.settings.redisSettings),
       useMail(app, app.settings.mailSettings),
       useWhois(app, app.settings.whoisSettings),
@@ -112,7 +115,7 @@ const retrieveAcorleConfig = async app => {
         ...localSettings,
         ...JSON.parse(config.context),
       };
-      app.settings = newSettings;
+      app.settings = applyRuntimeConfig(newSettings, process.env);
       appLogger.info('Configuration retrieved and applied successfully.');
 
     } else {

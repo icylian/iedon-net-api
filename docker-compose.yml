@@ -37,6 +37,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    environment:
+      NET_NAME: "${NET_NAME:-Mofu Networks}"
+      NET_DESC: "${NET_DESC:-Mofu Networks is an experimental network within DN42}"
+      NET_ASN: "${NET_ASN:-4242422670}"
+      MIGRATE_LEGACY_NETWORK_SETTINGS: "${MIGRATE_LEGACY_NETWORK_SETTINGS:-true}"
+      KIOUBIT_OPENAUTH_ENABLED: "${KIOUBIT_OPENAUTH_ENABLED:-true}"
+      KIOUBIT_OPENAUTH_DOMAIN: "${KIOUBIT_OPENAUTH_DOMAIN:-dn42.mofu.party}"
+      KIOUBIT_OPENAUTH_NOT_ALLOWED_ASNS: "${KIOUBIT_OPENAUTH_NOT_ALLOWED_ASNS-4242422670}"
+      CORS_ALLOW_ORIGIN: "${CORS_ALLOW_ORIGIN:-*}"
+      CORS_ALLOW_METHODS: "${CORS_ALLOW_METHODS:-GET, POST, OPTIONS}"
+      CORS_ALLOW_HEADERS: "${CORS_ALLOW_HEADERS:-X-PeerAPI-Version, Content-Type, Authorization}"
     volumes:
       - ./config/config.js:/usr/src/app/config.js:ro
       - peerapi_logs:/usr/src/app/logs

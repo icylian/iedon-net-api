@@ -18,8 +18,15 @@ export class KioubitOpenAuthProvider extends DefaultOpenAuthProvider {
   }
 
   authenticate(data) {
-    const { params, signature } = data;
-    if (!this.isReady || !params || !signature) return false;
+    const { params, signature } = data || {};
+    if (!this.isReady) {
+      this.logger.warn("Kioubit OpenAuth rejected: public key is not ready.");
+      return false;
+    }
+    if (!params || !signature) {
+      this.logger.warn("Kioubit OpenAuth rejected: callback data is incomplete.");
+      return false;
+    }
 
     return this.verifyAuthToken(signature, params);
   }
@@ -32,10 +39,18 @@ export class KioubitOpenAuthProvider extends DefaultOpenAuthProvider {
 
       // Verify timestamp
       const currentTime = Math.floor(Date.now() / 1000);
-      if (Math.abs(userData.time - currentTime) > 60) return false;
+      if (Math.abs(userData.time - currentTime) > 60) {
+        this.logger.warn("Kioubit OpenAuth rejected: callback has expired.");
+        return false;
+      }
 
       // Verify domain
-      if (userData.domain !== this.openAuthSettings.myDomain) return false;
+      if (userData.domain !== this.openAuthSettings.myDomain) {
+        this.logger.warn(
+          `Kioubit OpenAuth rejected: callback domain ${userData.domain} does not match ${this.openAuthSettings.myDomain}.`
+        );
+        return false;
+      }
 
       // Create SHA-512 hash
       const verify = createVerify("SHA512");
@@ -47,12 +62,20 @@ export class KioubitOpenAuthProvider extends DefaultOpenAuthProvider {
         this.publicKey,
         Buffer.from(signature, "base64")
       );
-      if (!isValid) return false;
+      if (!isValid) {
+        this.logger.warn("Kioubit OpenAuth rejected: signature is invalid.");
+        return false;
+      }
 
       // If authenticated user is not allowed to use external open auth, just refuse the request
       if (userData.asn) {
         for (let i = 0; i < this.openAuthSettings.notAllowed.length; i++) {
-          if (this.openAuthSettings.notAllowed[i] === Number(userData.asn)) return false;
+          if (this.openAuthSettings.notAllowed[i] === Number(userData.asn)) {
+            this.logger.warn(
+              `Kioubit OpenAuth rejected: AS${userData.asn} is denied by configuration.`
+            );
+            return false;
+          }
         }
       }
 

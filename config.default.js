@@ -187,6 +187,14 @@ export default {
     dialectOptions: {}
   },
 
+  networkSettings: {
+    name: 'Mofu Networks',
+    description: 'Mofu Networks is an experimental network within DN42',
+    asn: '4242422670',
+    // Only replace the untouched settings from the original iEdon deployment.
+    migrateLegacyDefaults: true
+  },
+
   redisSettings: {
     driver: {
       host: 'localhost',
