@@ -145,7 +145,7 @@ export default {
 
   sshAuthServerSettings: { // This app will starts a ssh server to accept connections to auth with us
     provider: 'default',
-    challengeHint: 'ssh [-o "IdentitiesOnly=yes" -i ~/.ssh/id_rsa|ed25519] iedon.net -p 4222',
+    challengeHint: 'ssh [-o "IdentitiesOnly=yes" -i ~/.ssh/id_rsa|ed25519] peerapi.mofu.party -p 4222',
     ssh2: {
       listen: {
         type: 'tcp', // tcp or unix
@@ -159,7 +159,7 @@ export default {
       timeoutSeconds: 120,
       bannerText: [
         '==================================================',
-        'Welcome to the IEDON-NET DN42 Auth Server!',
+        'Welcome to the Mofu Networks DN42 Auth Server!',
         'Kopiere den folgenden Herausforderungstext, um dich anzumelden.',
         'サインインするには、次のチャレンジテキストをコピーしてください。',
         '複製以下挑戰文本以登入。',
@@ -262,8 +262,8 @@ export default {
   openAuthSettings: {
     providers: [ 'kioubit', 'default' ],
     kioubit: {
-      myDomain: 'iedon.net',
-      notAllowed: [ 4242422189 ],
+      myDomain: 'dn42.mofu.party',
+      notAllowed: [ 4242422670 ],
       publicKey: './kioubitAuth.pem'
     },
   },
@@ -311,9 +311,7 @@ export default {
 
   // Configure CORS, preflight headers and custom headers here
   preflightHeaders: {
-    'Access-Control-Request-Method': 'POST',
-    'Access-Control-Request-Headers': 'X-PINGOTHER, Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Max-Age': '86400'
   },
 
